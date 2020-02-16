@@ -6,7 +6,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
 
 setup(
     name='click_dynamics',
-    version='0.0.1',
+    version='0.0.2',
     packages=find_packages(exclude=['examples']),
     include_package_data=True,
     description='Utilities for dynamically adding commands to click cli',
