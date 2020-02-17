@@ -31,6 +31,16 @@ def get_click_imports_from_path(filepath: str) -> Tuple[str, list]:
     return base_path, []
 
 
+def import_from(dotpath: str, name: str):
+    '''
+    Import module and return instance of given function name
+        dotpath - str - the dotpath for the import
+        name - str - the method to import from the dotpath
+    '''
+    module = __import__(dotpath, fromlist=[name])
+    return getattr(module, name) or None
+
+
 def import_command_or_group_from_dotpath(base_group: click.core.Group, dotpath: str, import_name: str, verbose: bool= False) -> None:
     '''
     Attempt to import into environment and add command to base group
@@ -41,14 +51,12 @@ def import_command_or_group_from_dotpath(base_group: click.core.Group, dotpath: 
     '''
     msg = ''
     try:
-        exec_cmd = f'from {dotpath} import {import_name}; global base_group_command; base_group_command={import_name}'
-        exec(exec_cmd)
-        bg_command = globals().get('base_group_command', None)
+        bg_command = import_from(dotpath, import_name)
         assert bg_command
         base_group.add_command(bg_command)
         msg = f'Successfully loaded and added command: {import_name}'
     except AssertionError:
-        msg = f'Failed to load: {dotpath}, {import_name}, failed to find any commands in globals'
+        msg = f'Failed to load: {dotpath}, {import_name}, failed to get attribute from module'
     except Exception as err:    
         msg = f'Failed to load: {dotpath}, {import_name}, {err}'
     if verbose and msg:
