@@ -1,8 +1,10 @@
-# Click Dynamics
+# ClickUtils
 
-    Dynamically nest and add click groups and commands
+    Extra utils for click library
 
 # Examples
+
+    Loading click groups and commands from filepath or directory
 
     Directory structure
     _ cwd
@@ -19,7 +21,7 @@ import os
 import re
 import click
 
-from click_dynamics.utils import load_commands_from_directory
+from clickutils import load_commands_from_directory
 
 
 @click.group()

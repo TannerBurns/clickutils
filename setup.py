@@ -5,13 +5,13 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
     README = readme.read()
 
 setup(
-    name='click_dynamics',
-    version='0.0.3',
+    name='clickutils',
+    version='0.0.4',
     packages=find_packages(exclude=['examples']),
     include_package_data=True,
-    description='Utilities for dynamically adding commands to click cli',
+    description='Extra utils for click library',
     long_description=README,
-    url='https://www.github.com/tannerburns/click_dynamics',
+    url='https://www.github.com/tannerburns/clickutils',
     author='Tanner Burns',
     author_email='tjburns102@gmail.com',
     install_requires=[

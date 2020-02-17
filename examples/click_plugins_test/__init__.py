@@ -2,7 +2,7 @@ import os
 import re
 import click
 
-from click_dynamics.utils import load_commands_from_directory
+from clickutils import load_commands_from_directory
 
 
 @click.group()
