@@ -43,3 +43,30 @@ if __name__ == '__main__':
     cli()
 ```
 
+
+Same example using decorator
+```python
+import os
+import re
+import click
+
+from clickutils.decorators import load_groups_and_commands
+
+
+@click.group()
+def cli(verbose: bool):
+    '''click_plugins'''
+
+@load_groups_and_commands('plugins', verbose=False)
+@click.group()
+def plugins_group():
+    '''click_plugins test plugins'''
+    pass
+
+cli.add_command(plugins_group, name='plugins')
+
+
+if __name__ == '__main__':
+    cli()
+```
+
