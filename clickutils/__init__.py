@@ -53,6 +53,7 @@ def get_dotpath(filepath: str):
                 break
         else:
             break
+    
     return dotpath
 
 
@@ -88,7 +89,7 @@ def import_command_or_group_from_dotpath(base_group: click.core.Group, dotpath: 
         print(msg)
 
 
-def load_commands_from_path(base_group: click.core.Group, filepath:str, verbose: bool= False) -> None:
+def load_commands_from_path(base_group: click.core.Group, filepath:str, verbose: bool= False, basedir: str= None) -> None:
     '''
     Attempt to load click commands from a given path that follow the click_dynamics structure
         base_group - click.core.Group - base click group to add commands
@@ -100,6 +101,8 @@ def load_commands_from_path(base_group: click.core.Group, filepath:str, verbose:
     negations = set()
 
     for base_click_import_path, import_name_list, negate_list in click_import_table:
+        if basedir:
+            base_click_import_path = base_click_import_path.replace(basedir, '')
         dotpath = get_dotpath(base_click_import_path)
         for import_name in import_name_list:
             click_import_list.append([base_group, dotpath, import_name])
@@ -119,4 +122,9 @@ def load_commands_from_directory(base_group: click.core.Group, directory: str, v
     '''
     click_group_and_command_paths = get_directories_from_path(directory)
     for group_command_path in click_group_and_command_paths:
-        load_commands_from_path(base_group, group_command_path, verbose=verbose)
+        load_commands_from_path(
+            base_group, 
+            group_command_path, 
+            verbose=verbose, 
+            basedir='/'.join(directory.split('/')[:-1])
+        )
