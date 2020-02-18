@@ -7,28 +7,53 @@ from typing import Tuple
 
 CLICK_COMMAND_PATTERN = '\@click\.command\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)'
 CLICK_GROUP_PATTERN = '\@click\.group\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)'
+CLICK_ADD_COMMAND_PATTERN = '.*\.add_command\((.*), .*\)'
 
 
 def get_directories_from_path(filepath: str) -> list:
     '''
     Return all directories found within the given directory
     '''
-    return [ os.path.join(filepath, fp) for fp in os.listdir(filepath) 
-        if os.path.isdir(os.path.join(filepath, fp)) and '__pycache__' not in fp
+    return [
+        os.path.join(root, d)
+        for root, dirs, files in os.walk(filepath) 
+        for d in dirs
+        if '__pycache__' not in os.path.join(root, d) and 'groups' in d
     ]
-
 
 def get_click_imports_from_path(filepath: str) -> Tuple[str, list]:
     '''
     Return the base path and all found groups or commands imports
     '''
-    base_path = os.path.join(filepath, 'groups')
-    init_path = os.path.join(base_path, '__init__.py')
-    if os.path.exists(init_path):
-        with open(init_path, 'r') as fin:
-            data = fin.read()
-            return base_path, re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data)
-    return base_path, []
+    click_import_table = []
+    if os.path.exists(filepath) and os.path.isdir(filepath):
+        for fname in os.listdir(filepath):
+            fpath = os.path.join(filepath, fname)
+            if os.path.isfile(fpath) and '.py' in fname:
+                with open(fpath, 'r') as fin:
+                    data = fin.read()
+                    if '__init__.py' in fname:
+                        negate_list = re.findall(CLICK_ADD_COMMAND_PATTERN, data)
+                        import_list = re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data)
+                        click_import_table.append([filepath, import_list, negate_list])
+                    else:
+                        negate_list = re.findall(CLICK_ADD_COMMAND_PATTERN, data)
+                        import_list = re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data)
+                        click_import_table.append([fpath.replace('.py', ''), import_list, negate_list])
+    return click_import_table
+
+
+def get_dotpath(filepath: str):
+    dotpath = filepath.replace("/", ".")
+    while True:
+        if len(dotpath) > 0:
+            if dotpath[0] == '.':
+                dotpath = dotpath[1:]
+            else:
+                break
+        else:
+            break
+    return dotpath
 
 
 def import_from(dotpath: str, name: str):
@@ -70,10 +95,19 @@ def load_commands_from_path(base_group: click.core.Group, filepath:str, verbose:
         filepath - str - attempted path to find commands
         verbose - bool [default:False] - print verbose output
     '''
-    base_click_import_path, click_imports = get_click_imports_from_path(filepath)
-    for import_name in click_imports:
-        dotpath = base_click_import_path.replace("/", ".")
-        import_command_or_group_from_dotpath(base_group, dotpath, import_name, verbose=verbose)
+    click_import_table = get_click_imports_from_path(filepath)
+    click_import_list = []
+    negations = set()
+
+    for base_click_import_path, import_name_list, negate_list in click_import_table:
+        dotpath = get_dotpath(base_click_import_path)
+        for import_name in import_name_list:
+            click_import_list.append([base_group, dotpath, import_name])
+        negations.update(negate_list)
+    
+    for base_group, dotpath, import_name in click_import_list:
+        if import_name not in negations:
+            import_command_or_group_from_dotpath(base_group, dotpath, import_name, verbose=verbose)
 
 
 def load_commands_from_directory(base_group: click.core.Group, directory: str, verbose: bool= False) -> None:
