@@ -10,7 +10,6 @@ setup(
     packages=find_packages(exclude=['examples']),
     include_package_data=True,
     description='Extra utils for click library',
-    long_description=README,
     url='https://www.github.com/tannerburns/clickutils',
     author='Tanner Burns',
     author_email='tjburns102@gmail.com',
