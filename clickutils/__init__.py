@@ -33,13 +33,15 @@ def get_click_imports_from_path(filepath: str) -> Tuple[str, list]:
                 with open(fpath, 'r') as fin:
                     data = fin.read()
                     if '__init__.py' in fname:
-                        negate_list = re.findall(CLICK_ADD_COMMAND_PATTERN, data)
-                        import_list = re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data)
-                        click_import_table.append([filepath, import_list, negate_list])
+                        citpath = filepath
                     else:
-                        negate_list = re.findall(CLICK_ADD_COMMAND_PATTERN, data)
-                        import_list = re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data)
-                        click_import_table.append([fpath.replace('.py', ''), import_list, negate_list])
+                        citpath = fpath.replace('.py', '')
+                    click_import_table.append([
+                        citpath, 
+                        re.findall(CLICK_GROUP_PATTERN, data) + re.findall(CLICK_COMMAND_PATTERN, data), 
+                        re.findall(CLICK_ADD_COMMAND_PATTERN, data)
+                    ])
+
     return click_import_table
 
 
