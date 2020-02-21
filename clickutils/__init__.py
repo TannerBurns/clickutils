@@ -1,7 +1,9 @@
 import os
 import re
 import click
+import traceback
 
+from contextlib import redirect_stdout
 from typing import Tuple
 
 
@@ -130,3 +132,30 @@ def load_commands_from_directory(base_group: click.core.Group, directory: str, v
             verbose=verbose, 
             basedir='/'.join(directory.split('/')[:-1])
         )
+
+
+def test_click_command(cmd: click.core.Command, *args: list):
+    try:
+        arg_values = {c.name: a for a, c in zip(args, cmd.params)}
+        args_needed = {c.name: c for c in cmd.params
+                    if c.name not in arg_values}
+        
+        opts = {a.name: a for a in cmd.params if isinstance(a, click.Option)}
+        # check positional arguments list
+        for arg in (a for a in cmd.params if isinstance(a, click.Argument)):
+            if arg.name not in arg_values:
+                raise click.BadParameter("Missing required positional"
+                                        "parameter '{}'".format(arg.name))
+        
+        opts_list = sum(
+        [[o.opts[0], str(arg_values[n])] for n, o in opts.items()], [])
+        
+        print(f'Starting command: {cmd.name!r}')
+        with open(os.devnull, 'w') as devnull:
+            with redirect_stdout(devnull):
+                cmd(opts_list)
+    except Exception as err:
+        tb_str = ''.join(traceback.format_exception(None, err, err.__traceback__))
+        print(f'Failed command: {cmd.name!r}, {tb_str}')
+    finally:
+        print(f'Finished command: {cmd.name!r}')

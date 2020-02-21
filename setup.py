@@ -6,11 +6,12 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
 
 setup(
     name='clickutils',
-    version='0.0.5',
+    version='0.0.6',
     packages=find_packages(exclude=['examples']),
     include_package_data=True,
     description='Extra utils for click library',
     long_description=README,
+    long_description_content_type='text/markdown',
     url='https://www.github.com/tannerburns/clickutils',
     author='Tanner Burns',
     author_email='tjburns102@gmail.com',
