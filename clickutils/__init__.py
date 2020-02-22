@@ -4,7 +4,7 @@ import click
 import traceback
 
 from contextlib import redirect_stdout
-from typing import Tuple
+from typing import Tuple, Callable
 from multiprocessing import Process
 
 
@@ -136,7 +136,9 @@ def load_commands_from_directory(base_group: click.core.Group, directory: str, v
 
 
 class test_click_command(object):
-
+    '''
+        class for testing click commands and reporting their traceback's
+    '''
     def __init__(self, cmd: click.core.Command, *args: list, ):
         self.ok = True
         self.cmd = cmd
@@ -176,3 +178,41 @@ class test_click_command(object):
             self.ok = False
         
         return self.ok
+
+class click_loader(object):
+    '''
+    Dynamically load groups and commands from structured project dir
+    project_dir
+    |_click_group
+        |__groups (recursively searched)
+            |__ __init__.py
+            |__ group2.py
+    '''
+    class group(click.core.Group):
+        '''
+        clickutils decorator for dynamically creating a new group of commands
+        '''
+        def __init__(self, filepath: str, name: str= None, verbose: bool= False):
+            super().__init__(self)
+            self.verbose = verbose
+            self.name = name
+            if os.path.exists(filepath):
+                self.filepath = filepath
+            else:
+                raise TypeError(f'Argument must be a valid filepath. Given path: {filepath!r} was not valid')
+        
+        def __call__(self, fn: Callable, **kwargs):
+            
+            grp = click.Group(self.name, **kwargs)
+            
+            if self.filepath:
+                if os.path.isfile(self.filepath):
+                    load_commands_from_path(grp, self.filepath, verbose=self.verbose)
+                if os.path.isdir(self.filepath):
+                    load_commands_from_directory(grp, self.filepath, verbose=self.verbose)
+            else:
+                msg = f'Self is of type: {type(self).__name__!r} and not {f"click.Group"!r}.'
+                msg += f'Please make sure decorator is above click decorators.'
+                raise TypeError(msg)
+
+            return grp

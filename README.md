@@ -50,20 +50,19 @@ import os
 import re
 import click
 
-from clickutils.decorators import load_groups_and_commands
+from clickutils import click_loader
 
 
 @click.group()
 def cli(verbose: bool):
     '''click_plugins'''
 
-@load_groups_and_commands('plugins', verbose=False)
-@click.group()
+@click_loader.group('plugins', name='plugins', verbose=False)
 def plugins_group():
     '''click_plugins test plugins'''
     pass
 
-cli.add_command(plugins_group, name='plugins')
+cli.add_command(plugins_group)
 
 
 if __name__ == '__main__':
