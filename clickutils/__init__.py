@@ -40,8 +40,8 @@ class click_loader(object):
         
         for base_click_import_path, import_name_list, negate_list in click_loader.get_click_imports_from_path(filepath):
             if basedir:
-                print(basedir)
-                print(base_click_import_path)
+                if 'site-packages' in basedir:
+                    basedir = '/'.join(basedir.split('/')[:-1])
                 base_click_import_path = base_click_import_path.replace(basedir, '')
             dotpath = get_dotpath(base_click_import_path)
             click_import_list.extend([[base_group, dotpath, import_name] for import_name in import_name_list])
@@ -121,40 +121,70 @@ class click_loader(object):
         if verbose and msg:
             print(msg)
 
+    @staticmethod
+    def load(base_group: click.core.Group, filepath: str, verbose: bool= False):
+        """method for dynamically loading groups and commands from a filepath for file or dir
+        
+        Arguments:
+            base_group {click.core.Group} -- base click group for adding commands
+            filepath {str} -- filepath to attempt load
+        
+        Keyword Arguments:
+            verbose {bool} -- print verbose output (default: {False})
+        """
+        if os.path.isfile(filepath):
+            click_loader.load_commands_from_path(base_group, filepath, verbose=verbose)
+        elif os.path.isdir(filepath):
+            click_loader.load_commands_from_directory(base_group, filepath, verbose=verbose)
+        else:
+            if verbose:
+                print(f'Filepath was not a valid file or directory')
+
+
     class group(click.core.Group):
         """decorator for loading groups and commands from a structured click directory
+            this decorator is equal to @click.group, if given a directory groups and commands will attempted
+            to be found and imported into the click environment
         """
-        def __init__(self, filepath: str, name: str= None, verbose: bool= False):
+        def __init__(self, filepath: str= '', name: str= '', verbose: bool= False):
+            """click_loader.group - extended click.group
+
+            Keyword Arguments:
+                filepath {str} -- filepath to load (default: {''})
+                name {str} -- name of group (default: {''})
+                verbose {bool} -- print verbose output (default: {False})
+            """
             super().__init__(self)
             self.verbose = verbose
-            self.name = name
+            self.name = name if name else None
             if os.path.exists(filepath):
                 self.filepath = filepath
-            else:
-                raise TypeError(f'Argument must be a valid filepath. Given path: {filepath!r} was not valid')
         
-        def __call__(self, fn: Callable, **kwargs):
+        def __call__(self, *args: list, **kwargs: dict):
+            """when command is invoked
+            
+            Returns:
+                click.Group -- new group with loaded groups and commands if filepath is found
+            """
             grp = click.Group(self.name, **kwargs)
             
-            if self.filepath:
-                if os.path.isfile(self.filepath):
-                    click_loader.load_commands_from_path(grp, self.filepath, verbose=self.verbose)
-                if os.path.isdir(self.filepath):
-                    click_loader.load_commands_from_directory(grp, self.filepath, verbose=self.verbose)
-            else:
-                msg = f'Self is of type: {type(self).__name__!r} and not {f"click.Group"!r}.'
-                msg += f'Please make sure decorator is above click decorators.'
-                raise TypeError(msg)
-
+            if hasattr(self, 'filepath'):
+                click_loader.load(grp, self.filepath, verbose=self.verbose)
+                
             return grp
 
 
 
 class test_click_command(object):
-    '''
-        class for testing click commands and reporting their traceback's
-    '''
-    def __init__(self, cmd: click.core.Command, *args: list, ):
+    """class for testing click commands and capturing their traceback
+    """
+    def __init__(self, cmd: click.core.Command, *args: list):
+        """test_click_command
+        
+        Arguments:
+            cmd {click.core.Command} -- command to test
+            args {list} -- list of positional args to map for click command
+        """
         self.ok = True
         self.cmd = cmd
         self.error = ''
@@ -162,6 +192,11 @@ class test_click_command(object):
         self.args = args
     
     def _run_silent_command(self, opts_list: list):
+        """run a command silently and redirect all stdout
+        
+        Arguments:
+            opts_list {list} -- list of click options
+        """
         with open(os.devnull, 'w') as devnull:
             with redirect_stdout(devnull):
                 try:
@@ -170,7 +205,18 @@ class test_click_command(object):
                     self.error = ''.join(traceback.format_exception(None, err, err.__traceback__))
                     self.ok = False
 
-    def __call__(self, verbose: bool= False):
+    def __call__(self, verbose: bool= False) -> bool:
+        """[summary]
+        
+        Keyword Arguments:
+            verbose {bool} -- print verbose output (default: {False})
+        
+        Raises:
+            click.BadParameter: a bad param was sent to the command being tested
+        
+        Returns:
+            bool -- returns stats of ran command true == no errors, false == errors
+        """
         arg_values = {c.name: a for a, c in zip(self.args, self.cmd.params)}
         args_needed = {c.name: c for c in self.cmd.params
                     if c.name not in arg_values}
