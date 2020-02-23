@@ -18,10 +18,9 @@
 
 ```python
 import os
-import re
 import click
 
-from clickutils import load_commands_from_directory
+from clickutils import click_loader
 
 
 @click.group()
@@ -29,7 +28,7 @@ from clickutils import load_commands_from_directory
     help='Print more verbose output')
 def cli(verbose: bool):
     '''click_plugins'''
-    load_commands_from_directory(plugins_group, 'plugins', verbose=verbose)
+    click_loader.load_commands_from_directory(plugins_group, 'plugins', verbose=verbose)
 
 @click.group()
 def plugins_group():
@@ -47,7 +46,6 @@ if __name__ == '__main__':
 Same example using decorator
 ```python
 import os
-import re
 import click
 
 from clickutils import click_loader
@@ -57,7 +55,7 @@ from clickutils import click_loader
 def cli(verbose: bool):
     '''click_plugins'''
 
-@click_loader.group('plugins', name='plugins', verbose=False)
+@click_loader.group(os.path.dirname(os.path.abspath(__file__)), name='plugins')
 def plugins_group():
     '''click_plugins test plugins'''
     pass
