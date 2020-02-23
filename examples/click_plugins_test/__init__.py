@@ -10,7 +10,7 @@ from clickutils import click_loader
     help='Print more verbose output')
 def cli(verbose: bool):
     '''click_plugins'''
-    click_loader.load_commands_from_directory(plugins_group, 'plugins', verbose=verbose)
+    click_loader.load(plugins_group, os.path.dirname(os.path.abspath(__file__)), verbose=verbose)
 
 @click.group()
 def plugins_group():
