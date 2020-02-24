@@ -1,11 +1,15 @@
 import re
 import os
+import click
 
 from typing import Callable, Union
 
 CLICK_COMMAND_PATTERN = re.compile('\@click\.command\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)')
 CLICK_GROUP_PATTERN = re.compile('\@click\.group\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)')
 CLICK_ADD_COMMAND_PATTERN = re.compile('.*\.add_command\((.*), .*\)')
+
+CLICKVIEWSET_PATTERN = re.compile('class (.*)\(.*ClickViewset.*\):')
+FOUNDVIEWSET_FORMAT_PATTERN = '\@{0}\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)'
 
 
 def get_directories_from_path(filepath: str, patterns: list= ['groups'], ignores: list= ['__pycache__']) -> list:
@@ -36,7 +40,7 @@ def get_dotpath(filepath: str) -> str:
     Returns:
         str -- the given filepath in blob format
     """
-    dotpath = filepath.replace("/", ".")
+    dotpath = filepath.replace('/', '.').replace('\\', '.')
     while len(dotpath) > 0:
         if dotpath[0] == '.':
             dotpath = dotpath[1:]
@@ -57,3 +61,22 @@ def import_from(dotpath: str, name: str) -> Union[Callable, None]:
     """
     module = __import__(dotpath, fromlist=[name])
     return getattr(module, name) or None
+
+
+def convert_args_to_opts(cmd: click.core.Command, *args: list):
+    """convert list of args to a list of click options for a given command
+
+    Arguments:
+        cmd {click.core.Command} -- command to confirm options
+        *args {list} -- arguments to convert to opts
+
+    """
+    arg_values = {c.name: a for a, c in zip(args, cmd.params)}
+
+    opts = {a.name: a for a in cmd.params if isinstance(a, click.Option)}
+    # check positional arguments list
+    for arg in (a for a in cmd.params if isinstance(a, click.Argument)):
+        if arg.name not in arg_values:
+            raise click.BadParameter(f'Missing required positional parameter {arg.name!r}')
+
+    return sum([[o.opts[0], str(arg_values[n])] for n, o in opts.items()], [])
