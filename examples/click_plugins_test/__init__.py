@@ -1,24 +1,19 @@
 import os
-import re
 import click
 
 from clickutils import click_loader
 
-
 @click.group()
-@click.option('--verbose', '-v', type=bool, is_flag=True, default=False,
-    help='Print more verbose output')
-def cli(verbose: bool):
+def cli():
     '''click_plugins'''
-    click_loader.load(plugins_group, os.path.dirname(os.path.abspath(__file__)), verbose=verbose)
 
-@click.group()
+@click_loader.group(os.path.dirname(os.path.abspath(__file__)), name='plugins', verbose=False)
 def plugins_group():
     '''click_plugins test plugins'''
     pass
 
-cli.add_command(plugins_group, name='plugins')
 
+cli.add_command(plugins_group)
 
 if __name__ == '__main__':
     cli()
