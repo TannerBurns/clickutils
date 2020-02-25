@@ -1,7 +1,7 @@
 import click
 import json
 
-from typing import NamedTuple, Union, Any
+from typing import Union, Any
 
 class ClickViewCommand(click.Command):
     """Overloaded click.Command to set ctx.params['self'] as the object, this will be set during a proper call to Viewset
@@ -10,8 +10,10 @@ class ClickViewCommand(click.Command):
         *args {list} -- list of arguments for class
         **kwargs {dict} -- dictionary of named arguments
     """
+
     def __init__(self, *args: list, **kwargs: dict):
         super(ClickViewCommand, self).__init__(*args, **kwargs)
+        self._cls = None
 
     def invoke(self, ctx: click.Context):
         """Overloaded invoke, sets the ctx.params['self'] value
@@ -26,7 +28,7 @@ class ClickViewCommand(click.Command):
         ctx.params['self'] = self._cls
         return super(ClickViewCommand, self).invoke(ctx)
 
-class clickviews(object):
+class clickmixins(object):
 
     @staticmethod
     def command(name: str= None, **kwargs: dict):
@@ -45,6 +47,7 @@ class BaseViewset(object):
     Name: str
     Version: Union[str, int, float]
     Viewset: Any
+    Commands: tuple
 
     def __init__(self, *args, **kwargs):
         for key, value in kwargs.items():
@@ -78,7 +81,7 @@ class BaseClickViewset(BaseViewset):
         group = click.Group(name=self.name, **kwargs)
         for method in [m for m in dir(self) if not m.startswith('__') and not m.endswith('__')]:
             attr = getattr(self, method)
-            if type(attr) == ClickViewCommand:
+            if type(attr) == ClickViewCommand and any(c in method for c in self.Commands):
                 attr._cls = self
                 group.add_command(attr)
         self.convert()
@@ -90,12 +93,12 @@ class BaseClickViewset(BaseViewset):
         """
 
 
-    def echoattr(self, attribute: str, list_separator:str='\n', show_name:bool=False, show_type:bool=False):
+    def echoattr(self, attribute: str, list_delimiter:str='\n', show_name:bool=False, show_type:bool=False):
         """print an attribute to stdout
 
         Args:
             attribute {str} -- attribute name
-            list_separator {str} -- delimiter to join list with [default: '\n']
+            list_delimiter {str} -- delimiter to join list with [default: '\n']
             show_name {bool} -- option to show attribute name on print
             show_type {bool} -- option to show type of attribute on print
 
@@ -111,8 +114,8 @@ class BaseClickViewset(BaseViewset):
 
             if isinstance(value, dict):
                 msg += json.dumps(value, indent=2)
-            elif isinstance(value, list):
-                msg += list_separator.join(value)
+            elif isinstance(value, (tuple, list)):
+                msg += list_delimiter.join((str(v) for v in value))
             else:
                 msg += value if value else ''
 
@@ -129,8 +132,9 @@ class AbstractClickViewset(BaseClickViewset):
             version (command_version) - print version of command (if set) for invoked class command
     """
     Name = 'AbstractClickViewset'
+    Commands = ('echo', 'list', 'version')
 
-    @clickviews.command(name='echo')
+    @clickmixins.command(name='echo')
     @click.option('--attribute', '-a', type=str,
         help='echo attribute if exists')
     def echo(self, attribute: str):
@@ -141,8 +145,7 @@ class AbstractClickViewset(BaseClickViewset):
         """
         self.echoattr(attribute)
 
-
-    @clickviews.command(name='list')
+    @clickmixins.command(name='list')
     @click.option('--values', '-v', is_flag=True, type=bool, default=False, show_default=True,
                   help='Show values for the attribute during output')
     @click.option('--types', '-t', is_flag=True, type=bool, default=False, show_default=True,
@@ -163,12 +166,12 @@ class AbstractClickViewset(BaseClickViewset):
                 continue
 
             if values:
-                self.echoattr(attr, list_separator=', ', show_name=True, show_type=types)
+                self.echoattr(attr, list_delimiter=', ', show_name=True, show_type=types)
             else:
                 print(attr)
 
 
-    @clickviews.command(name='command_version')
+    @clickmixins.command(name='command_version')
     def version(self):
         """Print version string of group"""
         self.echoattr('Version')

@@ -69,13 +69,13 @@ if __name__ == '__main__':
 
 Early example of ClickViewset
 ```python
-from clickutils.views import AbstractClickViewset, clickviews
-class UserDefinedViewset(AbstractClickViewset):
-    Name = 'NewClickViewset'
+class UserDictViewset(AbstractClickViewset):
+    Name = 'DictionaryViewset'
     Version = '1.0.0'
     Viewset = {'users': ['user1', 'user2', 'user3']}
+    Commands = ('list', 'version', 'another_command')
 
-    @clickviews.command(name='another_command')
+    @clickmixins.command(name='another_command')
     def another_command(self):
         print('defined another user command that can interact with object (self) which contains Viewset attributes')
 
@@ -84,13 +84,11 @@ class UserDefinedViewset(AbstractClickViewset):
     this is a custom way to add the Viewset into the command class attributes
     """
     def convert(self):
-        print('user defined convert')
         if isinstance(self.Viewset, dict):
             for key, value in self.Viewset.items():
                 setattr(self, key, value)
-                print(f'added {key!r} and {value!r}')
 
-@UserDefinedViewset(name='test_command2')
+@UserDictViewset(name='test_command2')
 def test_command_group2():
     '''Test command2 plugin'''
     pass
