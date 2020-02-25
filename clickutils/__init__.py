@@ -150,18 +150,18 @@ class click_loader(object):
 
 
     class group(object):
-        """decorator for loading groups and commands from a structured click directory
-            this decorator is equal to @click.group, if given a directory groups and commands will attempted
-            to be found and imported into the click environment
+        """click_loader.group - extended click.group
+
+        decorator for loading groups and commands from a structured click directory
+        this decorator is equal to @click.group, if given a directory groups and commands will attempted
+        to be found and imported into the click environment
+
+        Keyword Arguments:
+            filepath {str} -- filepath to load (default: {''})
+            name {str} -- name of group (default: {''})
+            verbose {bool} -- print verbose output (default: {False})
         """
         def __init__(self, filepath: str= '', name: str= '', verbose: bool= False):
-            """click_loader.group - extended click.group
-
-            Keyword Arguments:
-                filepath {str} -- filepath to load (default: {''})
-                name {str} -- name of group (default: {''})
-                verbose {bool} -- print verbose output (default: {False})
-            """
             self.verbose = verbose
             self.name = name if name else None
             if os.path.exists(filepath):
@@ -183,15 +183,15 @@ class click_loader(object):
 
 
 class test_click_command(object):
-    """class for testing click commands and capturing their traceback
+    """test_click_command
+
+    class for testing click commands and capturing their traceback
+
+    Arguments:
+        cmd {click.core.Command} -- command to test
+        args {list} -- list of positional args to map for click command
     """
     def __init__(self, cmd: click.core.Command, *args: list):
-        """test_click_command
-        
-        Arguments:
-            cmd {click.core.Command} -- command to test
-            args {list} -- list of positional args to map for click command
-        """
         self.ok = True
         self.cmd = cmd
         self.error = ''
