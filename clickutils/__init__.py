@@ -1,3 +1,4 @@
+import re
 import os
 import click
 import traceback
@@ -7,7 +8,8 @@ from contextlib import redirect_stdout
 from multiprocessing import Process
 
 from clickutils.utils import CLICK_GROUP_PATTERN, CLICK_COMMAND_PATTERN, CLICK_ADD_COMMAND_PATTERN
-from clickutils.utils import get_dotpath, get_directories_from_path, import_from
+from clickutils.utils import CLICKVIEWSET_PATTERN, FOUNDVIEWSET_FORMAT_PATTERN
+from clickutils.utils import get_dotpath, get_directories_from_path, import_from, convert_args_to_opts
 
 
 class click_loader(object):
@@ -90,7 +92,12 @@ class click_loader(object):
                         data = fin.read()
                         click_import_table.append([
                             filepath if '__init__.py' in fname else fpath.replace('.py', ''), 
-                            CLICK_GROUP_PATTERN.findall(data) + CLICK_COMMAND_PATTERN.findall(data), 
+                            CLICK_GROUP_PATTERN.findall(data) + CLICK_COMMAND_PATTERN.findall(data) +
+                                [viewset_definition
+                                 for named_viewset in CLICKVIEWSET_PATTERN.findall(data)
+                                 for viewset_definition in re.findall(
+                                    FOUNDVIEWSET_FORMAT_PATTERN.format(named_viewset), data)
+                                 ],
                             CLICK_ADD_COMMAND_PATTERN.findall(data)
                         ])
         return click_import_table
@@ -116,8 +123,9 @@ class click_loader(object):
             msg = f'Successfully loaded and added command: {import_name}'
         except AssertionError:
             msg = f'Failed to load: {dotpath}, {import_name}, failed to get attribute from module'
-        except Exception as err:    
-            msg = f'Failed to load: {dotpath}, {import_name}, {err}'
+        except Exception as err:
+            tb = ''.join(traceback.format_exception(None, err, err.__traceback__))
+            msg = f'Failed to load: {dotpath}, {import_name}, {tb}'
         if verbose and msg:
             print(msg)
 
@@ -141,20 +149,19 @@ class click_loader(object):
                 print(f'Filepath was not a valid file or directory')
 
 
-    class group(click.core.Group):
-        """decorator for loading groups and commands from a structured click directory
-            this decorator is equal to @click.group, if given a directory groups and commands will attempted
-            to be found and imported into the click environment
+    class group(object):
+        """click_loader.group - extended click.group
+
+        decorator for loading groups and commands from a structured click directory
+        this decorator is equal to @click.group, if given a directory groups and commands will attempted
+        to be found and imported into the click environment
+
+        Keyword Arguments:
+            filepath {str} -- filepath to load (default: {''})
+            name {str} -- name of group (default: {''})
+            verbose {bool} -- print verbose output (default: {False})
         """
         def __init__(self, filepath: str= '', name: str= '', verbose: bool= False):
-            """click_loader.group - extended click.group
-
-            Keyword Arguments:
-                filepath {str} -- filepath to load (default: {''})
-                name {str} -- name of group (default: {''})
-                verbose {bool} -- print verbose output (default: {False})
-            """
-            super().__init__(self)
             self.verbose = verbose
             self.name = name if name else None
             if os.path.exists(filepath):
@@ -176,15 +183,15 @@ class click_loader(object):
 
 
 class test_click_command(object):
-    """class for testing click commands and capturing their traceback
+    """test_click_command
+
+    class for testing click commands and capturing their traceback
+
+    Arguments:
+        cmd {click.core.Command} -- command to test
+        args {list} -- list of positional args to map for click command
     """
     def __init__(self, cmd: click.core.Command, *args: list):
-        """test_click_command
-        
-        Arguments:
-            cmd {click.core.Command} -- command to test
-            args {list} -- list of positional args to map for click command
-        """
         self.ok = True
         self.cmd = cmd
         self.error = ''
@@ -217,17 +224,7 @@ class test_click_command(object):
         Returns:
             bool -- returns stats of ran command true == no errors, false == errors
         """
-        arg_values = {c.name: a for a, c in zip(self.args, self.cmd.params)}
-        args_needed = {c.name: c for c in self.cmd.params
-                    if c.name not in arg_values}
-        
-        opts = {a.name: a for a in self.cmd.params if isinstance(a, click.Option)}
-        # check positional arguments list
-        for arg in (a for a in self.cmd.params if isinstance(a, click.Argument)):
-            if arg.name not in arg_values:
-                raise click.BadParameter(f'Missing required positional parameter {arg.name!r}')
-        
-        opts_list = sum([[o.opts[0], str(arg_values[n])] for n, o in opts.items()], [])
+        opts_list = convert_args_to_opts(self.cmd, self.args)
 
         if verbose:
             print(f'Invoking command: {self.name!r}')
