@@ -17,7 +17,8 @@ class UserDictViewset(AbstractClickViewset):
     Name = 'DictionaryViewset'
     Version = '1.0.0'
     Viewset = {'users': ['user1', 'user2', 'user3']}
-    Commands = ('list', 'version', 'another_command')
+    commands = ('list', 'version', 'another_command', 'echo')
+    hidden_commands = ('echo', )
 
     @clickmixins.command(name='another_command')
     def another_command(self):

@@ -54,7 +54,8 @@ class BaseClickViewset(object):
     Name: str
     Version: Union[str, int, float]
     Viewset: Any
-    Commands: tuple
+    commands: tuple
+    hidden_commands: tuple
 
     def __init__(self, *args, **kwargs: dict):
         for key, value in kwargs.items():
@@ -73,7 +74,9 @@ class BaseClickViewset(object):
         group = click.Group(name=self.name, **kwargs)
         for method in [m for m in dir(self) if not m.startswith('__') and not m.endswith('__')]:
             attr = getattr(self, method)
-            if type(attr) == ClickViewCommand and any(c in method for c in self.Commands):
+            if type(attr) == ClickViewCommand and (hasattr(self, 'commands') and any(c in method for c in self.commands)):
+                if hasattr(self, 'hidden_commands') and any(hc in method for hc in self.hidden_commands):
+                    attr.hidden=True
                 attr._cls = self
                 group.add_command(attr)
         self.convert()
@@ -100,7 +103,7 @@ class BaseClickViewset(object):
 
             msg = f'{attribute!r} '
 
-            if name_only:
+            if not name_only:
                 if show_type:
                     msg += f'{type(value).__name__!r} '
 
@@ -124,18 +127,20 @@ class AbstractClickViewset(BaseClickViewset):
             version (command_version) - print version of command (if set) for invoked class command
     """
     Name = 'AbstractClickViewset'
-    Commands = ('echo', 'list', 'version')
+    commands = ('echo', 'list', 'version')
 
     @clickmixins.command(name='echo')
     @click.option('--attribute', '-a', type=str,
         help='echo attribute if exists')
-    def echo(self, attribute: str):
+    @click.option('--list_delimiter', '-ld', type=str, default='\n', show_default=True,
+        help='Delimiter to use for list join')
+    def echo(self, attribute: str, list_delimiter: str):
         """Attempt to read and print attributes by name
 
         Args:
             attribute {str} -- attribute name to attempt and read
         """
-        self.echoattr(attribute)
+        self.echoattr(attribute, list_delimiter=list_delimiter)
 
     @clickmixins.command(name='list')
     @click.option('--values', '-v', is_flag=True, type=bool, default=False, show_default=True,
@@ -156,7 +161,7 @@ class AbstractClickViewset(BaseClickViewset):
         for attr in dir(self):
             if callable(getattr(self, attr)) or (attr.startswith('__') and attr.endswith('__') and not named):
                 continue
-            self.echoattr(attr, list_delimiter=', ', name_only=values, show_type=types)
+            self.echoattr(attr, list_delimiter=', ', name_only=not values, show_type=types)
 
 
     @clickmixins.command(name='command_version')
