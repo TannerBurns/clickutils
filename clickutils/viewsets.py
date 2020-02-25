@@ -24,7 +24,6 @@ class ClickViewCommand(click.Command):
         Returns:
             super(.*).invoke(ctx) -- value from invoke call
         """
-        # handle both classmethod or object method
         ctx.params['self'] = self._cls
         return super(ClickViewCommand, self).invoke(ctx)
 
@@ -43,18 +42,8 @@ class clickmixins(object):
         """
         return click.command(name, ClickViewCommand, **kwargs)
 
-class BaseViewset(object):
-    Name: str
-    Version: Union[str, int, float]
-    Viewset: Any
-    Commands: tuple
 
-    def __init__(self, *args, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
-class BaseClickViewset(BaseViewset):
+class BaseClickViewset(object):
     """BaseClickViewset - ClickViewCommands added to a viewset will be able to tie groups with objects than can be
         overloaded by users to be able to query different content
 
@@ -62,11 +51,14 @@ class BaseClickViewset(BaseViewset):
         *args {list} -- list of positional arguments
         **kwargs {dict} optional arguments, if name is given it will be used as  the group name
     """
-    Name = 'BaseClickViewset'
+    Name: str
+    Version: Union[str, int, float]
+    Viewset: Any
+    Commands: tuple
 
     def __init__(self, *args, **kwargs: dict):
-        super(BaseClickViewset, self).__init__(*args,  **kwargs)
-        self.name = kwargs.get('name', None)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def __call__(self, *args: list, **kwargs: dict):
         """invoked on command call
@@ -93,7 +85,7 @@ class BaseClickViewset(BaseViewset):
         """
 
 
-    def echoattr(self, attribute: str, list_delimiter:str='\n', show_name:bool=False, show_type:bool=False):
+    def echoattr(self, attribute: str, list_delimiter:str='\n', name_only:bool=False, show_type:bool=False):
         """print an attribute to stdout
 
         Args:
@@ -106,18 +98,18 @@ class BaseClickViewset(BaseViewset):
         if hasattr(self, attribute):
             value = getattr(self, attribute)
 
-            msg = ''
-            if show_name:
-                msg += f'{attribute!r} '
-            if show_type:
-                msg += f'{type(value).__name__!r} '
+            msg = f'{attribute!r} '
 
-            if isinstance(value, dict):
-                msg += json.dumps(value, indent=2)
-            elif isinstance(value, (tuple, list)):
-                msg += list_delimiter.join((str(v) for v in value))
-            else:
-                msg += value if value else ''
+            if name_only:
+                if show_type:
+                    msg += f'{type(value).__name__!r} '
+
+                if isinstance(value, dict):
+                    msg += json.dumps(value, indent=2)
+                elif isinstance(value, (tuple, list)):
+                    msg += list_delimiter.join((str(v) for v in value))
+                else:
+                    msg += value if value else ''
 
             print(msg)
         else:
@@ -147,7 +139,7 @@ class AbstractClickViewset(BaseClickViewset):
 
     @clickmixins.command(name='list')
     @click.option('--values', '-v', is_flag=True, type=bool, default=False, show_default=True,
-                  help='Show values for the attribute during output')
+        help='Show values for the attribute during output')
     @click.option('--types', '-t', is_flag=True, type=bool, default=False, show_default=True,
         help='Show attribute types in print out')
     @click.option('--named', '-n', is_flag=True, type=bool, default=False, show_default=True,
@@ -164,11 +156,7 @@ class AbstractClickViewset(BaseClickViewset):
         for attr in dir(self):
             if callable(getattr(self, attr)) or (attr.startswith('__') and attr.endswith('__') and not named):
                 continue
-
-            if values:
-                self.echoattr(attr, list_delimiter=', ', show_name=True, show_type=types)
-            else:
-                print(attr)
+            self.echoattr(attr, list_delimiter=', ', name_only=values, show_type=types)
 
 
     @clickmixins.command(name='command_version')

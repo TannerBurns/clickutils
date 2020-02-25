@@ -69,6 +69,9 @@ if __name__ == '__main__':
 
 Early example of ClickViewset
 ```python
+import click
+from clickutils.viewsets import AbstractClickViewset, clickmixins
+
 class UserDictViewset(AbstractClickViewset):
     Name = 'DictionaryViewset'
     Version = '1.0.0'

@@ -1,6 +1,6 @@
 import click
 
-from clickutils.views import AbstractClickViewset, clickmixins
+from clickutils.viewsets import AbstractClickViewset, clickmixins
 
 @click.group(name='test_command1')
 def test_command_group1():
