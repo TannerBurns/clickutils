@@ -130,7 +130,7 @@ class click_loader(object):
             print(msg)
 
     @staticmethod
-    def load(base_group: click.core.Group, filepath: str, verbose: bool= False):
+    def load(base_group: click.core.Group, filepath: str, debug: bool= False):
         """method for dynamically loading groups and commands from a filepath for file or dir
         
         Arguments:
@@ -138,14 +138,14 @@ class click_loader(object):
             filepath {str} -- filepath to attempt load
         
         Keyword Arguments:
-            verbose {bool} -- print verbose output (default: {False})
+            debug {bool} -- print verbose output for debug (default: {False})
         """
         if os.path.isfile(filepath):
-            click_loader.load_commands_from_path(base_group, filepath, verbose=verbose)
+            click_loader.load_commands_from_path(base_group, filepath, verbose=debug)
         elif os.path.isdir(filepath):
-            click_loader.load_commands_from_directory(base_group, filepath, verbose=verbose)
+            click_loader.load_commands_from_directory(base_group, filepath, verbose=debug)
         else:
-            if verbose:
+            if debug:
                 print(f'Filepath was not a valid file or directory')
 
 
@@ -159,10 +159,10 @@ class click_loader(object):
         Keyword Arguments:
             filepath {str} -- filepath to load (default: {''})
             name {str} -- name of group (default: {''})
-            verbose {bool} -- print verbose output (default: {False})
+            debug {bool} -- print verbose output for debug (default: {False})
         """
-        def __init__(self, filepath: str= '', name: str= '', verbose: bool= False):
-            self.verbose = verbose
+        def __init__(self, filepath: str= '', name: str= '', debug: bool= False):
+            self.debug = debug
             self.name = name if name else None
             if os.path.exists(filepath):
                 self.filepath = filepath
@@ -176,7 +176,7 @@ class click_loader(object):
             grp = click.Group(self.name, **kwargs)
             
             if hasattr(self, 'filepath'):
-                click_loader.load(grp, self.filepath, verbose=self.verbose)
+                click_loader.load(grp, self.filepath, debug=self.debug)
                 
             return grp
 

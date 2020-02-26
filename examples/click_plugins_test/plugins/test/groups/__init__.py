@@ -4,7 +4,7 @@ from clickutils.viewsets import AbstractClickViewset, clickmixins
 
 @click.group(name='test_command1')
 def test_command_group1():
-    '''Test command1 plugin'''
+    """Test command1 plugin"""
     pass
 
 
@@ -35,5 +35,5 @@ class UserDictViewset(AbstractClickViewset):
 
 @UserDictViewset(name='test_command2')
 def test_command_group2():
-    '''Test command2 plugin'''
+    """Test command2 plugin"""
     pass
