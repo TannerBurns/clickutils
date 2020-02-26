@@ -71,6 +71,7 @@ Early example of ClickViewset
 ```python
 import click
 from clickutils.viewsets import AbstractClickViewset, clickmixins
+from clickutils.viewsets import AbstractClickViewset, clickmixins
 
 class UserDictViewset(AbstractClickViewset):
     Name = 'DictionaryViewset'
@@ -94,7 +95,7 @@ class UserDictViewset(AbstractClickViewset):
 
 @UserDictViewset(name='test_command2')
 def test_command_group2():
-    '''Test command2 plugin'''
+    """Test command2 plugin"""
     pass
 ```
 

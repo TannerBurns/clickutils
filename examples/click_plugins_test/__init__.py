@@ -7,7 +7,7 @@ from clickutils import click_loader
 def cli():
     '''click_plugins'''
 
-@click_loader.group(os.path.dirname(os.path.abspath(__file__)), name='plugins', verbose=False)
+@click_loader.group(os.path.dirname(os.path.abspath(__file__)), name='plugins', debug=False)
 def plugins_group():
     '''click_plugins test plugins'''
     pass

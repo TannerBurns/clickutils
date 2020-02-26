@@ -47,6 +47,11 @@ class BaseClickViewset(object):
     """BaseClickViewset - ClickViewCommands added to a viewset will be able to tie groups with objects than can be
         overloaded by users to be able to query different content
 
+        if any positional args are given, the first  argument will be used as the name
+        if no positional arguments, check named arguments for name
+        * If name found in named arguments it will overwrite position args given *
+        if name not found, raise exception
+
     Args:
         *args {list} -- list of positional arguments
         **kwargs {dict} optional arguments, if name is given it will be used as  the group name
@@ -57,12 +62,22 @@ class BaseClickViewset(object):
     commands: tuple
     hidden_commands: tuple
 
+
     def __init__(self, *args, **kwargs: dict):
+        if len(args) > 0:
+            self.name = args[0]
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def __call__(self, *args: list, **kwargs: dict):
+        if not hasattr(self, 'name'):
+            raise AttributeError(f'attribute {"name"!r} not found')
+
+
+    def __call__(self, *args:list, **kwargs: dict):
         """invoked on command call
+
+            decorated function is args[0]
+            set group help from args[0].__doc__ to mimic pulling help from docstring in a click.group call
 
         Args:
             *args {list} -- list of arguments
@@ -71,12 +86,14 @@ class BaseClickViewset(object):
         Returns:
             group {click.Group} -- new group with any attribute commands added
         """
-        group = click.Group(name=self.name, **kwargs)
+        group = click.Group(name=self.name, ** kwargs)
+        group.help = args[0].__doc__
         for method in [m for m in dir(self) if not m.startswith('__') and not m.endswith('__')]:
             attr = getattr(self, method)
-            if type(attr) == ClickViewCommand and (hasattr(self, 'commands') and any(c in method for c in self.commands)):
+            if type(attr) == ClickViewCommand and (
+                    hasattr(self, 'commands') and any(c in method for c in self.commands)):
                 if hasattr(self, 'hidden_commands') and any(hc in method for hc in self.hidden_commands):
-                    attr.hidden=True
+                    attr.hidden = True
                 attr._cls = self
                 group.add_command(attr)
         self.convert()
@@ -129,6 +146,7 @@ class AbstractClickViewset(BaseClickViewset):
     Name = 'AbstractClickViewset'
     commands = ('echo', 'list', 'version')
 
+
     @clickmixins.command(name='echo')
     @click.option('--attribute', '-a', type=str,
         help='echo attribute if exists')
@@ -139,8 +157,10 @@ class AbstractClickViewset(BaseClickViewset):
 
         Args:
             attribute {str} -- attribute name to attempt and read
+            list_delimiter {str} -- delimiter to use for joining tuple and list
         """
         self.echoattr(attribute, list_delimiter=list_delimiter)
+
 
     @clickmixins.command(name='list')
     @click.option('--values', '-v', is_flag=True, type=bool, default=False, show_default=True,
