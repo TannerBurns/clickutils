@@ -12,8 +12,8 @@ class Sha256ParamType(click.ParamType):
     name = 'sha256'
 
     def convert(self, value, param, ctx) -> Union[str, List[str]]:
-        # check if value is a string
         if value:
+            # check if value is a string
             if isinstance(value, str):
                 # check if value exists on system
                 if os.path.exists(value):
