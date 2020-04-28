@@ -8,9 +8,6 @@ CLICK_COMMAND_PATTERN = re.compile('\@click\.command\(.*\)[\s\S]*?(?=\n.*?=|def 
 CLICK_GROUP_PATTERN = re.compile('\@click\.group\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)')
 CLICK_ADD_COMMAND_PATTERN = re.compile('.*\.add_command\((.*), .*\)')
 
-CLICKVIEWSET_PATTERN = re.compile('class (.*)\(.*ClickViewset.*\):')
-FOUNDVIEWSET_FORMAT_PATTERN = '\@{0}\(.*\)[\s\S]*?(?=\n.*?=|def (.*)\(\):)'
-
 
 def get_directories_from_path(filepath: str, patterns: list= ['groups'], ignores: list= ['__pycache__']) -> list:
     """Method for retrieving subdirectories matching patterns and ignoring specific keywords
@@ -80,3 +77,4 @@ def convert_args_to_opts(cmd: click.core.Command, *args: list):
             raise click.BadParameter(f'Missing required positional parameter {arg.name!r}')
 
     return sum([[o.opts[0], str(arg_values[n])] for n, o in opts.items()], [])
+
